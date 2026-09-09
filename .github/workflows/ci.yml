@@ -70,3 +70,46 @@ jobs:
 
       - name: Build frontend image
         run: docker build -t neon-runner-frontend ./frontend
+
+      - name: Save Docker images
+        run: |
+          docker save neon-runner-backend neon-runner-frontend \
+            -o neon-runner-images.tar
+
+      - name: Upload Docker images
+        uses: actions/upload-artifact@v4
+        with:
+          name: neon-runner-images
+          path: neon-runner-images.tar
+
+  security:
+    name: Trivy Security Scan
+    runs-on: ubuntu-latest
+    needs: docker
+
+    steps:
+      - name: Download Docker images
+        uses: actions/download-artifact@v4
+        with:
+          name: neon-runner-images
+
+      - name: Load Docker images
+        run: docker load -i neon-runner-images.tar
+
+      - name: Scan backend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: neon-runner-backend
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+      - name: Scan frontend image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: neon-runner-frontend
+          format: table
+          exit-code: 1
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
