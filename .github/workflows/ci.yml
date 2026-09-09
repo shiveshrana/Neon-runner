@@ -56,31 +56,43 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-  docker:
-    name: Docker Build
-    runs-on: ubuntu-latest
+    docker:
     needs: [backend, frontend]
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - name: Build backend image
-        run: docker build -t neon-runner-backend ./backend
+        run: |
+          docker build \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/neon-runner-backend:${{ github.sha }} \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/neon-runner-backend:latest \
+            ./backend
 
       - name: Build frontend image
-        run: docker build -t neon-runner-frontend ./frontend
-
-      - name: Save Docker images
         run: |
-          docker save neon-runner-backend neon-runner-frontend \
-            -o neon-runner-images.tar
+          docker build \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/neon-runner-frontend:${{ github.sha }} \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/neon-runner-frontend:latest \
+            ./frontend
 
-      - name: Upload Docker images
-        uses: actions/upload-artifact@v4
-        with:
-          name: neon-runner-images
-          path: neon-runner-images.tar
+      - name: Push backend image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/neon-runner-backend:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/neon-runner-backend:latest
+
+      - name: Push frontend image
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/neon-runner-frontend:${{ github.sha }}
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/neon-runner-frontend:latest
 
   security:
     name: Trivy Security Scan
