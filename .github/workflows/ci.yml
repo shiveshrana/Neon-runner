@@ -97,7 +97,7 @@ jobs:
         run: docker load -i neon-runner-images.tar
 
       - name: Scan backend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: neon-runner-backend
           format: table
@@ -106,7 +106,7 @@ jobs:
           severity: CRITICAL,HIGH
 
       - name: Scan frontend image
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: neon-runner-frontend
           format: table
