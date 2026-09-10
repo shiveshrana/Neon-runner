@@ -6,7 +6,6 @@ FROM node:22-slim AS build
 
 WORKDIR /app
 
-# Vite environment variables are compile-time values.
 ARG VITE_API_URL=""
 ENV VITE_API_URL=${VITE_API_URL}
 
@@ -21,17 +20,17 @@ RUN npm run build
 
 FROM nginx:alpine AS runtime
 
-# Update Alpine packages to the latest available security fixes.
+# Update Alpine packages to include security fixes.
 RUN apk update && apk upgrade --no-cache
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Run nginx as an unprivileged user on port 8080.
+# Configure nginx for non-root execution.
 RUN sed -i 's/listen\s\*80;/listen 8080;/' /etc/nginx/conf.d/default.conf \
-    && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx \
-    && touch /var/run/nginx.pid \
-    && chown nginx:nginx /var/run/nginx.pid
+    && sed -i '/^pid /d' /etc/nginx/nginx.conf \
+    && sed -i '/^events {/i pid /tmp/nginx.pid;' /etc/nginx/nginx.conf \
+    && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx
 
 USER nginx
 
